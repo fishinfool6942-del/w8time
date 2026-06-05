@@ -105,8 +105,18 @@ function Home() {
         </div>
       </main>
 
-      <footer className="text-center pb-6 text-[10px] text-muted-foreground/60 tracking-widest uppercase">
-        Powered by live restaurant devices
+      <footer className="text-center pb-6">
+        <div className="flex justify-center gap-6 text-xs text-muted-foreground/70">
+          <Link to="/about" className="hover:text-foreground transition-colors">
+            About Us
+          </Link>
+          <Link to="/contact" className="hover:text-foreground transition-colors">
+            Contact Us
+          </Link>
+        </div>
+        <p className="mt-3 text-[10px] text-muted-foreground/60 tracking-widest uppercase">
+          Powered by live restaurant devices
+        </p>
       </footer>
     </div>
   );
