@@ -1,29 +1,137 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+
+type Distance = 5 | 25 | 100;
+type SortBy = "wait" | "rating" | "distance";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Your App" },
-      { name: "description", content: "Replace this with a one-sentence description of your app." },
-      { property: "og:title", content: "Your App" },
-      { property: "og:description", content: "Replace this with a one-sentence description of your app." },
+      { title: "W8LIST — Real-time restaurant wait times" },
+      { name: "description", content: "Find restaurants near you sorted by live wait time, rating, or distance." },
     ],
   }),
-  component: Index,
+  component: Home,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+function Home() {
+  const navigate = useNavigate();
+  const [distance, setDistance] = useState<Distance | null>(null);
+  const [sortBy, setSortBy] = useState<SortBy | null>(null);
+
+  const ready = distance !== null && sortBy !== null;
+
+  const distances: { label: string; value: Distance }[] = [
+    { label: "5", value: 5 },
+    { label: "25", value: 25 },
+    { label: "100", value: 100 },
+  ];
+  const sorts: { label: string; value: SortBy }[] = [
+    { label: "Wait Time", value: "wait" },
+    { label: "Rating", value: "rating" },
+    { label: "Distance", value: "distance" },
+  ];
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <header className="pt-12 pb-8 px-6 text-center">
+        <h1 className="text-5xl font-black tracking-tight">
+          W<span className="text-primary">8</span>LIST
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground uppercase tracking-[0.2em]">
+          Skip the wait. Eat sooner.
+        </p>
+      </header>
+
+      <main className="flex-1 px-6 pb-10 max-w-md mx-auto w-full">
+        <section className="mt-4">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+            Distance (miles)
+          </h2>
+          <div className="grid grid-cols-3 gap-3">
+            {distances.map((d) => (
+              <FilterButton
+                key={d.value}
+                active={distance === d.value}
+                onClick={() => setDistance(d.value)}
+              >
+                {d.label}
+              </FilterButton>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-8">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+            Sort By
+          </h2>
+          <div className="grid grid-cols-3 gap-3">
+            {sorts.map((s) => (
+              <FilterButton
+                key={s.value}
+                active={sortBy === s.value}
+                onClick={() => setSortBy(s.value)}
+              >
+                {s.label}
+              </FilterButton>
+            ))}
+          </div>
+        </section>
+
+        <div className="mt-10">
+          <button
+            disabled={!ready}
+            onClick={() =>
+              navigate({
+                to: "/results",
+                search: { distance: distance!, sort: sortBy! },
+              })
+            }
+            className={cn(
+              "w-full h-14 rounded-xl font-bold text-base transition-all",
+              ready
+                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:brightness-110 cursor-pointer"
+                : "bg-muted text-muted-foreground cursor-not-allowed",
+            )}
+          >
+            Show Results
+          </button>
+          {!ready && (
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              Select one option from each category to continue
+            </p>
+          )}
+        </div>
+      </main>
+
+      <footer className="text-center pb-6 text-[10px] text-muted-foreground/60 tracking-widest uppercase">
+        Powered by live restaurant devices
+      </footer>
     </div>
+  );
+}
+
+function FilterButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "h-14 rounded-xl border-2 font-semibold text-sm transition-all cursor-pointer",
+        active
+          ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/30"
+          : "bg-card text-foreground border-border hover:border-primary/50",
+      )}
+    >
+      {children}
+    </button>
   );
 }
