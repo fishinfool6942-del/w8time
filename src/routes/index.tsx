@@ -40,7 +40,7 @@ function Home() {
           W<span className="text-primary">8</span>LIST
         </h1>
         <p className="mt-2 text-sm text-muted-foreground uppercase tracking-[0.2em]">
-          Skip the wait. Eat sooner.
+          Know before you Go.
         </p>
       </header>
 
