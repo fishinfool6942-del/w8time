@@ -77,14 +77,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "W8TIME" },
+      { name: "description", content: "This app has one simple purpose and only one function. To make available in a searchable and sortable list local restaurants with the lowest wait times now." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "W8TIME" },
+      { property: "og:description", content: "This app has one simple purpose and only one function. To make available in a searchable and sortable list local restaurants with the lowest wait times now." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "W8TIME" },
+      { name: "twitter:description", content: "This app has one simple purpose and only one function. To make available in a searchable and sortable list local restaurants with the lowest wait times now." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/ulT36ALlNqWr3EuPpTGsB7rre3K3/social-images/social-1780701803188-140.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/ulT36ALlNqWr3EuPpTGsB7rre3K3/social-images/social-1780701803188-140.webp" },
     ],
     links: [
       {
