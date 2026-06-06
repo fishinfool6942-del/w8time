@@ -1,8 +1,9 @@
-import { createFileRoute, Link, useNavigate, useRouteContext } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { LocationRequiredPrompt } from "@/components/LocationRequiredPrompt";
 import { useLocationPermission } from "@/hooks/useLocationPermission";
+import { useLocationStore } from "@/hooks/useLocationStore";
 
 type Distance = 5 | 25 | 100;
 type SortBy = "wait" | "rating" | "distance";
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/")({
 function Home() {
   const navigate = useNavigate();
   const { permissionStatus, requestLocationPermission } = useLocationPermission();
+  const { userLocation, getCurrentLocation, isLocating } = useLocationStore();
   const [distance, setDistance] = useState<Distance | null>(null);
   const [sortBy, setSortBy] = useState<SortBy | null>(null);
   const [showLocationRequired, setShowLocationRequired] = useState(false);
@@ -38,10 +40,14 @@ function Home() {
     { label: "Distance", value: "distance" },
   ];
 
-  const handleDistanceClick = (value: Distance) => {
+  const handleDistanceClick = async (value: Distance) => {
     if (permissionStatus === "denied") {
       setShowLocationRequired(true);
     } else {
+      // Get user's current location if not already stored
+      if (!userLocation) {
+        await getCurrentLocation();
+      }
       setDistance(value);
     }
   };
@@ -52,6 +58,8 @@ function Home() {
     setIsRequesting(false);
     
     if (success) {
+      // Also get the actual coordinates
+      await getCurrentLocation();
       setShowLocationRequired(false);
     }
   };
@@ -86,8 +94,14 @@ function Home() {
                 key={d.value}
                 active={distance === d.value}
                 onClick={() => handleDistanceClick(d.value)}
-                disabled={permissionStatus === "denied"}
-                tooltip={permissionStatus === "denied" ? "Location access required" : undefined}
+                disabled={permissionStatus === "denied" || isLocating}
+                tooltip={
+                  permissionStatus === "denied"
+                    ? "Location access required"
+                    : isLocating
+                      ? "Getting your location..."
+                      : undefined
+                }
               >
                 {d.label}
               </FilterButton>
@@ -119,7 +133,7 @@ function Home() {
 
         <div className="mt-10">
           <button
-            disabled={!ready}
+            disabled={!ready || !userLocation}
             onClick={() =>
               navigate({
                 to: "/results",
@@ -128,7 +142,7 @@ function Home() {
             }
             className={cn(
               "w-full h-14 rounded-xl font-bold text-base transition-all",
-              ready
+              ready && userLocation
                 ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:brightness-110 cursor-pointer"
                 : "bg-muted text-muted-foreground cursor-not-allowed",
             )}
@@ -138,6 +152,11 @@ function Home() {
           {!ready && (
             <p className="mt-3 text-center text-xs text-muted-foreground">
               Select one option from each category to continue
+            </p>
+          )}
+          {ready && !userLocation && (
+            <p className="mt-3 text-center text-xs text-amber-600 dark:text-amber-500">
+              📍 Waiting for your location...
             </p>
           )}
         </div>
@@ -153,7 +172,7 @@ function Home() {
           </Link>
         </div>
         <p className="mt-3 text-[10px] text-muted-foreground/60 tracking-widest uppercase">
-          Powered by live restaurant devices
+          Powered by OpenStreetMap data
         </p>
       </footer>
     </div>
@@ -192,7 +211,7 @@ function FilterButton({
         {children}
       </button>
       {disabled && tooltip && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-muted text-muted-foreground text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-muted text-muted-foreground text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10">
           {tooltip}
         </div>
       )}
