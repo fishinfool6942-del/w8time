@@ -1,6 +1,8 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useRouteContext } from "@tanstack/react-router";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { LocationRequiredPrompt } from "@/components/LocationRequiredPrompt";
+import { useLocationPermission } from "@/hooks/useLocationPermission";
 
 type Distance = 5 | 25 | 100;
 type SortBy = "wait" | "rating" | "distance";
@@ -17,8 +19,11 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const navigate = useNavigate();
+  const { permissionStatus, requestLocationPermission } = useLocationPermission();
   const [distance, setDistance] = useState<Distance | null>(null);
   const [sortBy, setSortBy] = useState<SortBy | null>(null);
+  const [showLocationRequired, setShowLocationRequired] = useState(false);
+  const [isRequesting, setIsRequesting] = useState(false);
 
   const ready = distance !== null && sortBy !== null;
 
@@ -33,8 +38,34 @@ function Home() {
     { label: "Distance", value: "distance" },
   ];
 
+  const handleDistanceClick = (value: Distance) => {
+    if (permissionStatus === "denied") {
+      setShowLocationRequired(true);
+    } else {
+      setDistance(value);
+    }
+  };
+
+  const handleEnableLocation = async () => {
+    setIsRequesting(true);
+    const success = await requestLocationPermission();
+    setIsRequesting(false);
+    
+    if (success) {
+      setShowLocationRequired(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
+      {showLocationRequired && (
+        <LocationRequiredPrompt
+          onClose={() => setShowLocationRequired(false)}
+          onEnable={handleEnableLocation}
+          isLoading={isRequesting}
+        />
+      )}
+
       <header className="pt-12 pb-8 px-6 text-center">
         <h1 className="text-5xl font-black tracking-tight">
           W<span className="text-primary">8</span>LIST
@@ -54,12 +85,19 @@ function Home() {
               <FilterButton
                 key={d.value}
                 active={distance === d.value}
-                onClick={() => setDistance(d.value)}
+                onClick={() => handleDistanceClick(d.value)}
+                disabled={permissionStatus === "denied"}
+                tooltip={permissionStatus === "denied" ? "Location access required" : undefined}
               >
                 {d.label}
               </FilterButton>
             ))}
           </div>
+          {permissionStatus === "denied" && (
+            <p className="mt-2 text-xs text-amber-600 dark:text-amber-500">
+              📍 Location access is required for distance-based search
+            </p>
+          )}
         </section>
 
         <section className="mt-8">
@@ -122,26 +160,42 @@ function Home() {
   );
 }
 
+interface FilterButtonProps {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  disabled?: boolean;
+  tooltip?: string;
+}
+
 function FilterButton({
   active,
   onClick,
   children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+  disabled = false,
+  tooltip,
+}: FilterButtonProps) {
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "h-14 rounded-xl border-2 font-semibold text-sm transition-all cursor-pointer",
-        active
-          ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/30"
-          : "bg-card text-foreground border-border hover:border-primary/50",
+    <div className="relative group">
+      <button
+        onClick={onClick}
+        disabled={disabled}
+        className={cn(
+          "h-14 rounded-xl border-2 font-semibold text-sm transition-all w-full",
+          active
+            ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/30"
+            : disabled
+              ? "bg-muted text-muted-foreground border-border cursor-not-allowed opacity-50"
+              : "bg-card text-foreground border-border hover:border-primary/50 cursor-pointer",
+        )}
+      >
+        {children}
+      </button>
+      {disabled && tooltip && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-muted text-muted-foreground text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          {tooltip}
+        </div>
       )}
-    >
-      {children}
-    </button>
+    </div>
   );
 }
