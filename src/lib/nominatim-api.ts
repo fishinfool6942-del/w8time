@@ -1,6 +1,8 @@
 /**
- * Nominatim API integration for searching restaurants
- * Uses OpenStreetMap data - completely free, no API keys required
+ * OpenStreetMap restaurant search
+ * Uses the Overpass API for radius-based "amenities near a point" queries
+ * (Nominatim's /search endpoint is a geocoder and does not support radius search).
+ * Completely free, no API keys required.
  */
 
 export interface Restaurant {
@@ -12,11 +14,13 @@ export interface Restaurant {
   distanceMiles: number;
   rating?: number;
   reviewCount?: number;
+  phone?: string;
+  website?: string;
+  cuisine?: string;
 }
 
 /**
- * Calculate distance between two coordinates using Haversine formula
- * Returns distance in miles
+ * Haversine distance in miles between two coordinates.
  */
 function calculateDistance(
   lat1: number,
@@ -24,116 +28,104 @@ function calculateDistance(
   lat2: number,
   lon2: number
 ): number {
-  const R = 3959; // Earth's radius in miles
+  const R = 3959; // miles
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) *
       Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+      Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function buildAddress(tags: Record<string, string> = {}): string | undefined {
+  const parts = [
+    [tags["addr:housenumber"], tags["addr:street"]].filter(Boolean).join(" "),
+    tags["addr:city"],
+    tags["addr:state"],
+    tags["addr:postcode"],
+  ].filter(Boolean);
+  return parts.length ? parts.join(", ") : undefined;
+}
+
+const OVERPASS_ENDPOINTS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+];
+
 /**
- * Search for restaurants near a location using Nominatim
- * @param userLat - User's latitude
- * @param userLon - User's longitude
- * @param radiusMiles - Search radius in miles
- * @returns Array of restaurants with accurate distances
+ * Search for real restaurants near a location using the Overpass API.
  */
 export async function searchRestaurants(
   userLat: number,
   userLon: number,
   radiusMiles: number
 ): Promise<Restaurant[]> {
-  try {
-    const radiusMeters = radiusMiles * 1609.34; // Convert miles to meters
+  const radiusMeters = Math.round(radiusMiles * 1609.34);
 
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?` +
-        `format=json&` +
-        `amenity=restaurant&` +
-        `lat=${userLat}&` +
-        `lon=${userLon}&` +
-        `radius=${radiusMeters}&` +
-        `limit=50&` +
-        `accept-language=en`,
-      {
-        headers: {
-          "User-Agent": "W8TIME-App",
-        },
-      }
+  // Query restaurants, cafes, fast food, bars, pubs as "places to eat"
+  const query = `
+    [out:json][timeout:25];
+    (
+      node["amenity"~"^(restaurant|cafe|fast_food|bar|pub|food_court)$"](around:${radiusMeters},${userLat},${userLon});
+      way["amenity"~"^(restaurant|cafe|fast_food|bar|pub|food_court)$"](around:${radiusMeters},${userLat},${userLon});
     );
+    out center tags;
+  `.trim();
 
-    if (!response.ok) {
-      throw new Error(`Nominatim API error: ${response.status}`);
+  let data: any = null;
+  let lastError: unknown = null;
+
+  for (const endpoint of OVERPASS_ENDPOINTS) {
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "data=" + encodeURIComponent(query),
+      });
+      if (!response.ok) {
+        lastError = new Error(`Overpass error: ${response.status}`);
+        continue;
+      }
+      data = await response.json();
+      break;
+    } catch (err) {
+      lastError = err;
     }
+  }
 
-    const results = await response.json();
-
-    if (!Array.isArray(results)) {
-      return [];
-    }
-
-    // Transform Nominatim results to our Restaurant format
-    const restaurants: Restaurant[] = results
-      .map((place: any) => {
-        const lat = parseFloat(place.lat);
-        const lon = parseFloat(place.lon);
-        const distance = calculateDistance(userLat, userLon, lat, lon);
-
-        return {
-          id: place.place_id.toString(),
-          name: place.name || "Unknown Restaurant",
-          lat,
-          lon,
-          address: place.address?.restaurant || place.display_name,
-          distanceMiles: distance,
-          // Nominatim doesn't provide ratings, but we can enhance this later
-          rating: undefined,
-          reviewCount: undefined,
-        };
-      })
-      // Filter to only restaurants within the requested radius
-      // (Nominatim's radius parameter isn't always exact)
-      .filter((r) => r.distanceMiles <= radiusMiles);
-
-    // Sort by distance by default
-    return restaurants.sort((a, b) => a.distanceMiles - b.distanceMiles);
-  } catch (error) {
-    console.error("Error searching restaurants:", error);
+  if (!data) {
+    console.error("Error searching restaurants:", lastError);
     return [];
   }
-}
 
-/**
- * Get details about a specific restaurant
- * @param placeId - The Nominatim place ID
- */
-export async function getRestaurantDetails(placeId: string) {
-  try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/details?` +
-        `format=json&` +
-        `osm_id=${placeId}&` +
-        `accept-language=en`,
-      {
-        headers: {
-          "User-Agent": "W8TIME-App",
-        },
-      }
-    );
+  const elements: any[] = Array.isArray(data.elements) ? data.elements : [];
 
-    if (!response.ok) {
-      throw new Error(`Nominatim API error: ${response.status}`);
-    }
+  const restaurants: Restaurant[] = elements
+    .map((el) => {
+      const lat = el.lat ?? el.center?.lat;
+      const lon = el.lon ?? el.center?.lon;
+      if (typeof lat !== "number" || typeof lon !== "number") return null;
+      const tags = el.tags ?? {};
+      if (!tags.name) return null; // skip unnamed POIs
 
-    return await response.json();
-  } catch (error) {
-    console.error("Error getting restaurant details:", error);
-    return null;
-  }
+      return {
+        id: `${el.type}/${el.id}`,
+        name: tags.name as string,
+        lat,
+        lon,
+        address: buildAddress(tags),
+        distanceMiles: calculateDistance(userLat, userLon, lat, lon),
+        rating: undefined,
+        reviewCount: undefined,
+        phone: tags.phone || tags["contact:phone"],
+        website: tags.website || tags["contact:website"],
+        cuisine: tags.cuisine,
+      } as Restaurant;
+    })
+    .filter((r): r is Restaurant => r !== null && r.distanceMiles <= radiusMiles)
+    .sort((a, b) => a.distanceMiles - b.distanceMiles);
+
+  return restaurants;
 }
