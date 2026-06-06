@@ -79,6 +79,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { httpEquiv: "Cache-Control", content: "no-store, no-cache, must-revalidate, max-age=0" },
+      { httpEquiv: "Pragma", content: "no-cache" },
+      { httpEquiv: "Expires", content: "0" },
       { title: "W8TIME" },
       { name: "description", content: "This app has one simple purpose and only one function. To make available in a searchable and sortable list local restaurants with the lowest wait times now." },
       { name: "author", content: "Lovable" },
@@ -92,6 +95,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/ulT36ALlNqWr3EuPpTGsB7rre3K3/social-images/social-1780701803188-140.webp" },
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/ulT36ALlNqWr3EuPpTGsB7rre3K3/social-images/social-1780701803188-140.webp" },
     ],
+
     links: [
       {
         rel: "stylesheet",
