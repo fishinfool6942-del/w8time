@@ -158,7 +158,7 @@ function RootComponent() {
         />
       )}
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet context={{ locationPermission: { permissionStatus, isLoading } }} />
+      <Outlet />
     </QueryClientProvider>
   );
 }
