@@ -7,10 +7,12 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { LocationPermissionPrompt } from "../components/LocationPermissionPrompt";
+import { useLocationPermission } from "../hooks/useLocationPermission";
 
 function NotFoundComponent() {
   return (
@@ -119,11 +121,40 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const { permissionStatus, isLoading, requestLocationPermission, denyLocationPermission } = useLocationPermission();
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [isRequesting, setIsRequesting] = useState(false);
+
+  // Show prompt on first load if permission hasn't been decided yet
+  useEffect(() => {
+    if (!isLoading && permissionStatus === "prompt") {
+      setShowPrompt(true);
+    }
+  }, [isLoading, permissionStatus]);
+
+  const handleAllow = async () => {
+    setIsRequesting(true);
+    await requestLocationPermission();
+    setShowPrompt(false);
+    setIsRequesting(false);
+  };
+
+  const handleDeny = () => {
+    denyLocationPermission();
+    setShowPrompt(false);
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
+      {showPrompt && (
+        <LocationPermissionPrompt
+          onAllow={handleAllow}
+          onDeny={handleDeny}
+          isLoading={isRequesting}
+        />
+      )}
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <Outlet context={{ locationPermission: { permissionStatus, isLoading } }} />
     </QueryClientProvider>
   );
 }
