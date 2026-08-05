@@ -1,14 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
-const SUPPORT_EMAIL = "support@w8list.com";
+const SUPPORT_EMAIL = "support@w8time.com";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact Us — W8LIST" },
-      { name: "description", content: "Get in touch with the W8LIST support team." },
-      { property: "og:title", content: "Contact Us — W8LIST" },
-      { property: "og:description", content: "Get in touch with the W8LIST support team." },
+      { title: "Contact Us — W8TIME" },
+      { name: "description", content: "Get in touch with the W8TIME support team." },
+      { property: "og:title", content: "Contact Us — W8TIME" },
+      { property: "og:description", content: "Get in touch with the W8TIME support team." },
     ],
   }),
   component: ContactPage,

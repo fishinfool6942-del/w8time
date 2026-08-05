@@ -8,7 +8,7 @@ export const Route = createFileRoute("/restaurant/$id")({
     return { restaurant };
   },
   head: () => ({
-    meta: [{ title: "Restaurant — W8LIST" }],
+    meta: [{ title: "Restaurant — W8TIME" }],
   }),
   component: RestaurantPage,
   notFoundComponent: () => (

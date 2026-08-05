@@ -3,10 +3,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About Us — W8LIST" },
-      { name: "description", content: "Learn about W8LIST and our mission to eliminate restaurant wait time guesswork." },
-      { property: "og:title", content: "About Us — W8LIST" },
-      { property: "og:description", content: "Learn about W8LIST and our mission to eliminate restaurant wait time guesswork." },
+      { title: "About Us — W8TIME" },
+      { name: "description", content: "Learn about W8TIME and our mission to eliminate restaurant wait time guesswork." },
+      { property: "og:title", content: "About Us — W8TIME" },
+      { property: "og:description", content: "Learn about W8TIME and our mission to eliminate restaurant wait time guesswork." },
     ],
   }),
   component: AboutPage,
@@ -23,12 +23,12 @@ function AboutPage() {
 
       <main className="flex-1 px-6 pb-12 max-w-md mx-auto w-full">
         <h1 className="text-3xl font-black tracking-tight">
-          About <span className="text-primary">W8LIST</span>
+          About <span className="text-primary">W8TIME</span>
         </h1>
 
         <section className="mt-8 space-y-4 text-sm leading-relaxed text-muted-foreground">
           <p>
-            W8LIST was built on a simple belief: nobody should have to guess how long they'll be waiting for a table.
+            W8TIME was built on a simple belief: nobody should have to guess how long they'll be waiting for a table.
             We partner with restaurants to place a dedicated wait-time device at the host stand — updated in real time by the staff who know the floor best.
           </p>
           <p>
@@ -43,7 +43,7 @@ function AboutPage() {
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li className="flex gap-2">
               <span className="text-primary">•</span>
-              <span>A free, battery-powered W8LIST device shipped directly to your location</span>
+              <span>A free, battery-powered W8TIME device shipped directly to your location</span>
             </li>
             <li className="flex gap-2">
               <span className="text-primary">•</span>
