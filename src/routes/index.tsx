@@ -11,7 +11,7 @@ type SortBy = "wait" | "rating" | "distance";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "W8LIST — Real-time restaurant wait times" },
+      { title: "W8TIME — Real-time restaurant wait times" },
       { name: "description", content: "Find restaurants near you sorted by live wait time, rating, or distance." },
     ],
   }),
